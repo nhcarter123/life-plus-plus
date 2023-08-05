@@ -1,5 +1,5 @@
 // Compute a hash code based on the input string
-const hashCode = (str : string) => {
+const hashCode = (str: string) => {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
@@ -9,14 +9,14 @@ const hashCode = (str : string) => {
   return hash;
 };
 
-export const shuffle = (array: string[]) => {
+export const shuffle = (array: any) => {
   for (var i = array.length - 1; i > 0; i--) {
     var j = Math.floor(Math.random() * (i + 1));
     var temp = array[i];
     array[i] = array[j];
     array[j] = temp;
   }
-}
+};
 
 const colors = [
   // "#c96d6d",
@@ -71,7 +71,7 @@ const colors = [
   // "#5a1f5a",
   // "#5a1f3d",
   // darker
-]
+];
 shuffle(colors);
 
 export const getRandomColor = (str: string) => {
@@ -79,4 +79,4 @@ export const getRandomColor = (str: string) => {
   const hash = hashCode(str);
   const randomIndex = Math.abs(hash) % colors.length;
   return colors[randomIndex];
-}
+};

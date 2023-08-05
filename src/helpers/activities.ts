@@ -1,3 +1,6 @@
+import { sleepDuration, wakeUpTime } from "./schedule";
+import { shuffle } from "./color";
+
 export type TActivity = {
   name: string;
   // scoringFunction: Function;
@@ -6,6 +9,7 @@ export type TActivity = {
   // interval: number;
   duration: number;
   fixedTime?: number;
+  overlap?: number;
 };
 
 export interface IRuntimeActivity extends TActivity {
@@ -19,6 +23,7 @@ export const activities: TActivity[] = [
     frequency: 1,
     // interval: 24,
     duration: 10,
+    fixedTime: wakeUpTime + 10,
   },
   {
     name: "run",
@@ -89,5 +94,7 @@ export const activities: TActivity[] = [
     frequency: 1,
     // interval: 24,
     duration: 10,
+    fixedTime: 1440 - (sleepDuration - wakeUpTime) - 10,
   },
 ];
+shuffle(activities);
