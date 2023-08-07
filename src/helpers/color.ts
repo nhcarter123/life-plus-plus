@@ -3,7 +3,7 @@ const hashCode = (str: string) => {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = (hash << 16) - hash + char;
+    hash = (hash << 5) - hash + char;
     hash |= 0; // Convert to 32bit integer
   }
   return hash;
@@ -18,7 +18,7 @@ export const shuffle = (array: any) => {
   }
 };
 
-const colors = [
+export const colors = [
   // "#c96d6d",
   // "#c9a46d",
   // "#c9c96d",

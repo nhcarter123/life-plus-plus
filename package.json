@@ -15,10 +15,12 @@
     "@types/react-custom-scrollbars": "^4.0.10",
     "@types/react-dom": "^18.2.7",
     "moment": "^2.29.4",
+    "moment-timezone": "^0.5.43",
     "prettier": "^3.0.1",
     "react": "^18.2.0",
     "react-custom-scrollbars": "^4.2.1",
     "react-dom": "^18.2.0",
+    "react-google-calendar-api": "^2.2.2",
     "react-scripts": "5.0.1",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"

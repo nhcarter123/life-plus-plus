@@ -1,19 +1,36 @@
-import { sleepDuration, wakeUpTime } from "./schedule";
+import {
+  sleepDuration,
+  TScheduleDay,
+  TScheduleItem,
+  wakeUpTime,
+} from "./schedule";
 import { shuffle } from "./color";
+import { closeToTime } from "./scoring";
 
 export type TActivity = {
   name: string;
-  // scoringFunction: Function;
+  scoringFunction?: (item: TScheduleItem, day: TScheduleDay) => number;
+  targetTime?: number;
   order: number;
+  cooldown?: number;
   frequency: number;
   // interval: number;
   duration: number;
   fixedTime?: number;
+  fixedDay?: number;
   overlap?: number;
+  isExercise?: boolean;
+  isWork?: boolean;
+  rewardForWorking?: boolean;
+  weekdayOnly?: boolean;
+  minimumTimeSpentThere?: number;
+  immovable?: boolean;
+  countTowardsWorkHours?: boolean;
 };
 
 export interface IRuntimeActivity extends TActivity {
   charge: number;
+  lastActivated?: number;
 }
 
 export const activities: TActivity[] = [
@@ -31,6 +48,16 @@ export const activities: TActivity[] = [
     frequency: 1,
     // interval: 24,
     duration: 30,
+    isExercise: true,
+    targetTime: 6.75 * 60,
+  },
+  {
+    name: "look at phone",
+    order: 1,
+    cooldown: 180,
+    frequency: 3,
+    duration: 10,
+    rewardForWorking: true,
   },
   {
     name: "push-ups",
@@ -38,6 +65,7 @@ export const activities: TActivity[] = [
     frequency: 1,
     // interval: 24,
     duration: 10,
+    isExercise: true,
   },
   {
     name: "shower",
@@ -47,16 +75,24 @@ export const activities: TActivity[] = [
     duration: 10,
   },
   {
+    name: "packing",
+    order: 10,
+    frequency: 1,
+    duration: 30,
+  },
+  {
     name: "breakfast",
-    order: 3,
+    order: 4,
     frequency: 1,
     // interval: 24,
+    targetTime: 8.5 * 60,
+    scoringFunction: closeToTime(8.5 * 60),
     duration: 25,
   },
   {
     name: "groceries",
-    order: 3,
-    frequency: 0.25,
+    order: 7,
+    frequency: 0.2,
     // interval: 168,
     duration: 120,
   },
@@ -70,22 +106,72 @@ export const activities: TActivity[] = [
   },
   {
     name: "watch french video",
-    order: 4,
+    order: 99,
     frequency: 2,
     duration: 15,
+    cooldown: 120,
+    rewardForWorking: true,
+  },
+  {
+    name: "respond to texts",
+    order: 6,
+    frequency: 1,
+    duration: 10,
   },
   {
     name: "work",
-    order: 4,
-    frequency: 5,
+    order: 6,
+    frequency: 6,
     // interval: 24,
-    duration: 90,
+    duration: 60,
+    isWork: true,
+    weekdayOnly: true,
+    countTowardsWorkHours: true,
+  },
+  {
+    name: "laundry",
+    order: 6,
+    frequency: 1 / 7,
+    duration: 20,
+    isWork: true,
+  },
+  {
+    name: "dishes",
+    order: 6,
+    frequency: 1 / 7,
+    duration: 15,
+    isWork: true,
+  },
+  {
+    name: "dryer",
+    order: 7,
+    frequency: 1 / 7,
+    duration: 20,
+    isWork: true,
+  },
+  {
+    name: "disc golf",
+    order: 4,
+    frequency: 1 / 7,
+    duration: 120,
+    isWork: true,
+  },
+  {
+    name: "drive to cafe",
+    order: 5,
+    frequency: 1,
+    duration: 10,
+    weekdayOnly: true,
+    minimumTimeSpentThere: 120,
   },
   {
     name: "dinner",
-    order: 3,
+    order: 30,
     frequency: 1,
     // interval: 24,
+    // scoringFunction: closeToTime(19 * 60),
+    // targetTime: 19 * 60,
+    fixedTime: 19.5 * 60,
     duration: 45,
   },
   {
@@ -97,4 +183,8 @@ export const activities: TActivity[] = [
     fixedTime: 1440 - (sleepDuration - wakeUpTime) - 10,
   },
 ];
-shuffle(activities);
+// shuffle(activities);
+
+// Dynamic fill remaining time
+// Order customizer - order - no order - random order
+// Activity editor
