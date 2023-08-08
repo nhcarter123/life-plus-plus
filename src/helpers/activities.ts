@@ -26,6 +26,7 @@ export type TActivity = {
   minimumTimeSpentThere?: number;
   immovable?: boolean;
   countTowardsWorkHours?: boolean;
+  isWorkFiller?: boolean;
 };
 
 export interface IRuntimeActivity extends TActivity {
@@ -76,25 +77,25 @@ export const activities: TActivity[] = [
   },
   {
     name: "packing",
-    order: 10,
+    order: 1,
     frequency: 1,
     duration: 30,
   },
   {
     name: "breakfast",
-    order: 4,
+    order: 6,
     frequency: 1,
     // interval: 24,
-    targetTime: 8.5 * 60,
-    scoringFunction: closeToTime(8.5 * 60),
+    // targetTime: 8.5 * 60,
+    // scoringFunction: closeToTime(8.5 * 60),
     duration: 25,
   },
   {
     name: "groceries",
-    order: 7,
+    order: 8,
     frequency: 0.2,
     // interval: 168,
-    duration: 120,
+    duration: 100,
   },
   {
     name: "lunch",
@@ -119,14 +120,15 @@ export const activities: TActivity[] = [
     duration: 10,
   },
   {
-    name: "work",
-    order: 6,
-    frequency: 6,
+    name: "work focus time",
+    order: 7,
+    frequency: 8,
     // interval: 24,
     duration: 60,
     isWork: true,
     weekdayOnly: true,
     countTowardsWorkHours: true,
+    isWorkFiller: true,
   },
   {
     name: "laundry",

@@ -10,15 +10,7 @@ type TSchedule = TScheduleDay[];
 
 export const wakeUpTime = 6 * 60;
 export const sleepDuration = 8 * 60;
-
-const scoreSchedule = (schedule: TSchedule) => {
-  let score = 0;
-
-  for (const day of schedule) {
-  }
-
-  return score;
-};
+const maximumWorkedMinutes = 8 * 60;
 
 export const createSchedule = (
   activities: TActivity[],
@@ -34,7 +26,6 @@ export const createSchedule = (
   for (let day = 0; day < days; day++) {
     let scheduleDay: TScheduleDay = [];
     const isWeekend = day % 7 === 0 || day % 7 === 6;
-    let hoursWorked = 0;
 
     const fixedActivities: IRuntimeActivity[] = activitiesCopy.filter(
       (activity) => activity.fixedTime,
@@ -67,27 +58,7 @@ export const createSchedule = (
       }
     }
 
-    for (const activity of movableActivities) {
-      if (activity.fixedTime) {
-        activity.charge += activity.frequency;
-        if (activity.charge >= 1) {
-          activity.charge -= 1;
-          const scheduleItem: TScheduleItem = {
-            day,
-            time: activity.fixedTime,
-            activity,
-          };
-
-          const overlappingMinutes = getOverlappingMinutes(
-            scheduleItem,
-            scheduleDay,
-          );
-          scheduleItem.time += overlappingMinutes;
-
-          scheduleDay.push(scheduleItem);
-        }
-      }
-    }
+    scheduleDay = applyMovableActivities(day, movableActivities, scheduleDay);
 
     scheduleDay = applyFluidActivities(
       scheduleDay,
@@ -98,13 +69,7 @@ export const createSchedule = (
       day,
     );
 
-    const workedMinutes = scheduleDay.reduce((acc, item) => {
-      if (item.activity.countTowardsWorkHours) {
-        return acc + item.activity.duration;
-      }
-      return acc;
-    }, 0);
-    console.log("workedHours", workedMinutes / 60);
+    // console.log("workedHours", workedMinutes / 60);
 
     scheduleDay.sort((a, b) => a.time - b.time);
     schedule.push(scheduleDay);
@@ -113,68 +78,80 @@ export const createSchedule = (
   return schedule;
 };
 
-export const randomSchedule = (
-  activities: TActivity[],
-  days: number,
-): TSchedule => {
-  const activitiesCopy: IRuntimeActivity[] = activities.map((activity) => ({
-    ...activity,
-    charge: Math.max(activity.frequency, 1),
-  }));
-  const schedule = [];
+const tryPlacing = (item: TScheduleItem, day: TScheduleDay, time: number) => {
+  const updatedItem = { ...item, time };
+  const overlappingMinutes = getOverlappingMinutes(updatedItem, day);
 
-  for (let day = 0; day < days; day++) {
-    const scheduleDay: TScheduleDay = [];
+  return overlappingMinutes === 0 && updatedItem;
+};
 
-    const fixedActivities = activitiesCopy.filter(
-      (activity) => activity.fixedTime,
-    );
-    const nonFixedActivities = activitiesCopy.filter(
-      (activity) => !activity.fixedTime,
-    );
-
-    for (const activity of fixedActivities) {
-      if (activity.fixedTime) {
+const applyMovableActivities = (
+  day: number,
+  movableActivities: IRuntimeActivity[],
+  scheduleDay: TScheduleDay,
+) => {
+  for (const activity of movableActivities) {
+    if (activity.fixedTime) {
+      activity.charge += activity.frequency;
+      if (activity.charge >= 1) {
+        activity.charge -= 1;
         const scheduleItem: TScheduleItem = {
           day,
           time: activity.fixedTime,
-          // activity: structuredClone(activity),
-          activity,
-        };
-        scheduleDay.push(scheduleItem);
-      }
-    }
-
-    for (const activity of nonFixedActivities) {
-      const { duration, frequency } = activity;
-      const chargeIterator = Math.floor(parseFloat(activity.charge.toFixed(3)));
-
-      const start = wakeUpTime;
-      const end = 1440 - (sleepDuration - wakeUpTime) - duration;
-      const range = end - start;
-
-      for (let i = 0; i < chargeIterator; i++) {
-        const randomTime = start + Math.random() * range;
-
-        const scheduleItem: TScheduleItem = {
-          day,
-          time: randomTime,
-          // activity: structuredClone(activity),
           activity,
         };
 
+        const overlappingMinutes = getOverlappingMinutes(
+          scheduleItem,
+          scheduleDay,
+        );
+
+        if (overlappingMinutes > 0) {
+          const placements: TScheduleItem[] = scheduleDay.flatMap((item) => {
+            const items = [];
+            const aboveItem = tryPlacing(
+              scheduleItem,
+              scheduleDay,
+              item.time - scheduleItem.activity.duration,
+            );
+            const belowItem = tryPlacing(
+              scheduleItem,
+              scheduleDay,
+              item.time + item.activity.duration,
+            );
+            if (aboveItem) {
+              items.push(aboveItem);
+            }
+            if (belowItem) {
+              items.push(belowItem);
+            }
+            return items;
+          });
+          placements.sort(
+            (a, b) =>
+              Math.abs(a.time - (a.activity.fixedTime || 0)) -
+              Math.abs(b.time - (b.activity.fixedTime || 0)),
+          );
+
+          scheduleDay.push(placements[0]);
+          continue;
+        }
+
         scheduleDay.push(scheduleItem);
       }
-
-      activity.charge += frequency;
-      activity.charge -= chargeIterator;
     }
-
-    schedule.push(scheduleDay);
   }
 
-  return schedule;
+  return scheduleDay;
 };
+
+const getWorkedMinutes = (scheduleDay: TScheduleDay) =>
+  scheduleDay.reduce((acc, item) => {
+    if (item.activity.countTowardsWorkHours) {
+      return acc + item.activity.duration;
+    }
+    return acc;
+  }, 0);
 
 const applyFluidActivities = (
   scheduleDay: TScheduleDay,
@@ -188,6 +165,7 @@ const applyFluidActivities = (
     activity.lastActivated = undefined;
   }
 
+  let workedMinutes = getWorkedMinutes(scheduleDay);
   let minutes = wakeUpTime;
   let steps = 0;
   let awayFromHome = false;
@@ -262,6 +240,17 @@ const applyFluidActivities = (
       );
 
       if (overlappingMinutes === 0) {
+        if (activity.countTowardsWorkHours) {
+          if (
+            activity.isWorkFiller &&
+            workedMinutes + duration > maximumWorkedMinutes
+          ) {
+            continue;
+          }
+
+          workedMinutes += duration;
+        }
+
         scheduleDay.push(scheduleItem);
 
         if (activity.minimumTimeSpentThere) {
@@ -269,10 +258,6 @@ const applyFluidActivities = (
           returnHomeMinutes = activity.minimumTimeSpentThere;
           leftHomeAt = minutes;
         }
-
-        // if (activity.orderDecay) {
-        //   activity.order += activity.orderDecay;
-        // }
 
         activity.lastActivated = minutes;
         minutes += duration;

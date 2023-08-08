@@ -31,11 +31,19 @@ export const getDayUntilDateTime = (
   dateTimeString: string,
   timeZone: string,
 ) => {
+  // const today = momentTimezone().tz(timeZone).startOf("day");
+  // const dateTime = momentTimezone(
+  //   dateTimeString,
+  //   "YYYY-MM-DDTHH:mm:ssZ",
+  //   timeZone,
+  // );
+  // return dateTime.startOf("day").diff(today, "days");
+
   const today = momentTimezone().tz(timeZone).startOf("day");
-  const dateTime = momentTimezone(
-    dateTimeString,
-    "YYYY-MM-DDTHH:mm:ssZ",
+  const dateTime = momentTimezone(dateTimeString, "YYYY-MM-DDTHH:mm:ssZ").tz(
     timeZone,
   );
-  return dateTime.startOf("day").diff(today, "days");
+  const diffInMilliseconds = dateTime.diff(today);
+  const diffInDays = Math.floor(diffInMilliseconds / (24 * 60 * 60 * 1000));
+  return diffInDays;
 };

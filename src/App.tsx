@@ -210,8 +210,24 @@ function App() {
                           }}
                         >
                           {formatTimeFromMinutes(item.time)}
-                          {/*{item.activity.overlap}*/}
                         </Box>
+                        {/*<Box*/}
+                        {/*  mx={1}*/}
+                        {/*  sx={{*/}
+                        {/*    lineHeight: "15px",*/}
+                        {/*  }}*/}
+                        {/*>*/}
+                        {/*  -*/}
+                        {/*</Box>*/}
+                        {/*<Box*/}
+                        {/*  sx={{*/}
+                        {/*    lineHeight: "15px",*/}
+                        {/*  }}*/}
+                        {/*>*/}
+                        {/*  {formatTimeFromMinutes(*/}
+                        {/*    item.time + item.activity.duration,*/}
+                        {/*  )}*/}
+                        {/*</Box>*/}
                       </Box>
 
                       {/*<Box>{item.time}</Box>*/}
