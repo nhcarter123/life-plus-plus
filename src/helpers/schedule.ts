@@ -1,4 +1,5 @@
 import { IRuntimeActivity, TActivity } from "./activities";
+import moment from "moment";
 
 export type TScheduleItem = {
   day: number;
@@ -22,10 +23,11 @@ export const createSchedule = (
     charge: Math.max(activity.frequency, 1),
   }));
   const schedule = [];
+  const today = moment().startOf("day");
 
   for (let day = 0; day < days; day++) {
     let scheduleDay: TScheduleDay = [];
-    const isWeekend = day % 7 === 0 || day % 7 === 6;
+    const isWeekend = [0, 6].includes(today.clone().add(day, "days").day());
 
     const fixedActivities: IRuntimeActivity[] = activitiesCopy.filter(
       (activity) => activity.fixedTime,
@@ -36,14 +38,14 @@ export const createSchedule = (
 
     fixedActivities.sort((a, b) => (a.fixedTime || 0) - (b.fixedTime || 0));
     const immovableActivities = fixedActivities.filter(
-      (activity) => activity.immovable,
+      (activity) => activity.fromWorkCalendar,
     );
     const movableActivities = fixedActivities.filter(
-      (activity) => !activity.immovable,
+      (activity) => !activity.fromWorkCalendar,
     );
 
     for (const activity of immovableActivities) {
-      if (activity.fixedTime && activity.fixedDay === day - 1) {
+      if (activity.fixedTime && activity.fixedDay === day) {
         activity.charge += activity.frequency;
         if (activity.charge >= 1) {
           activity.charge -= 1;
@@ -177,7 +179,9 @@ const applyFluidActivities = (
     // .map((obj) => ({ ...obj }))
     .filter(
       (activity) =>
-        activity.charge >= 1 && (!activity.weekdayOnly || !isWeekend),
+        activity.charge >= 1 &&
+        (!activity.weekdayOnly || !isWeekend) &&
+        (!activity.weekendOnly || isWeekend),
     );
 
   while (queue.length > 0 && steps < 200) {
@@ -245,7 +249,7 @@ const applyFluidActivities = (
             activity.isWorkFiller &&
             workedMinutes + duration > maximumWorkedMinutes
           ) {
-            continue;
+            continue; // TODO: fix not terminating
           }
 
           workedMinutes += duration;
@@ -291,7 +295,10 @@ const applyFluidActivities = (
   }
 
   for (const activity of allActivities) {
-    if (isWeekend && activity.weekdayOnly) {
+    if (
+      (isWeekend && activity.weekdayOnly) ||
+      (!isWeekend && activity.weekendOnly)
+    ) {
       continue;
     }
 

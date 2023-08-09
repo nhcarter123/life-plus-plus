@@ -16,6 +16,9 @@ const apiKey = "AIzaSyBSXgq-2Q4V1gQHZVgbkkOrpfEzSbmqmaE";
 const clientId =
   "1072546203896-te1e08cgcsuvmjjrt4lk1t18vindfdap.apps.googleusercontent.com";
 const clientSecret = "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";
+const personalCalendarId =
+  "c_4f42dcc850e6f70e3ff9f1184a6994c8482ac8c2471d85ed95c7f875d7860771@group.calendar.google.com";
+const primaryCalendarId = "primary";
 
 const config = {
   clientId,
@@ -27,6 +30,19 @@ const config = {
 };
 
 const apiCalendar = new ApiCalendar(config);
+
+type TCalendarEvent = {
+  summary: string;
+  start: {
+    dateTime: string;
+    timeZone: string;
+  };
+  end: {
+    dateTime: string;
+    timeZone: string;
+  };
+  // attendees: { email: string }[];
+};
 
 // const randSchedule = randomSchedule(activities, 7);
 //
@@ -51,69 +67,147 @@ function App() {
   //   }
   // }, [signedIn]);
 
-  const fetchEvents = () => {
-    apiCalendar.listCalendars().then((data: any) => {
-      setCalendarIds(data.result.items.map((item: any) => item.id));
+  const createEvent = (event: TCalendarEvent) =>
+    apiCalendar
+      .createEvent(event as any, personalCalendarId)
+      .then((result: any) => {
+        console.log(result);
+      })
+      .catch((res: any) => {
+        console.log(res.result.error.code);
+        console.log(res.result.error.message);
+      });
+
+  const fetchEvents = (calendarId: string): Promise<TActivity[]> =>
+    new Promise((resolve) =>
       apiCalendar
-        .listEvents({
-          calendarId: "primary",
-          timeMin: moment().startOf("day").toISOString(),
-          timeMax: moment().startOf("day").add(7, "days").toISOString(),
-          singleEvents: true,
-        })
+        .listCalendars()
         .then((data: any) => {
-          // console.log(data); // list of events
-          const importedActivities = data.result.items
-            .filter(
-              (item: any) =>
-                item.attendees &&
-                item.attendees.some(
-                  (attendee: any) =>
-                    attendee.self && attendee.responseStatus === "accepted",
-                ),
-            )
-            .map((item: any) => {
-              // console.log(item); // event object
-
-              const start = getMinutesFromStartOfDay(
-                item.start.dateTime,
-                item.start.timeZone,
-              );
-              const end = getMinutesFromStartOfDay(
-                item.end.dateTime,
-                item.end.timeZone,
-              );
-              // console.log(item);
-
-              if (!item.start.timeZone) {
-                console.log(item);
-                return;
-              }
-
-              const fixedDay = getDayUntilDateTime(
-                item.start.dateTime,
-                item.start.timeZone,
-              );
-
-              const newActivity: TActivity = {
-                fixedTime: start,
-                duration: end - start,
-                name: item.summary,
-                frequency: 0,
-                order: 0,
-                immovable: true,
-                countTowardsWorkHours: true,
-                fixedDay,
-              };
-
-              return newActivity;
+          setCalendarIds(data.result.items.map((item: any) => item.id));
+          apiCalendar
+            .listEvents({
+              calendarId,
+              timeMin: moment().startOf("day").toISOString(),
+              timeMax: moment().startOf("day").add(7, "days").toISOString(),
+              singleEvents: true,
             })
-            .filter((v: TActivity) => v);
+            .then((data: any) => {
+              // console.log(data); // list of events
+              const importedActivities = data.result.items
+                .filter(
+                  (item: any) =>
+                    (item.attendees &&
+                      item.attendees.some(
+                        (attendee: any) =>
+                          attendee.self &&
+                          attendee.responseStatus === "accepted",
+                      )) ||
+                    calendarId === personalCalendarId,
+                )
+                .map((item: any) => {
+                  // console.log(item); // event object
 
-          console.log(importedActivities); // activities
-          setImportedActivities(importedActivities);
-        });
+                  const start = getMinutesFromStartOfDay(
+                    item.start.dateTime,
+                    item.start.timeZone,
+                  );
+                  const end = getMinutesFromStartOfDay(
+                    item.end.dateTime,
+                    item.end.timeZone,
+                  );
+                  // console.log(item);
+
+                  if (!item.start.timeZone) {
+                    console.log(item);
+                    return;
+                  }
+
+                  const fixedDay = getDayUntilDateTime(
+                    item.start.dateTime,
+                    item.start.timeZone,
+                  );
+
+                  const newActivity: TActivity = {
+                    fixedTime: start,
+                    duration: end - start,
+                    name: item.summary,
+                    frequency: 0,
+                    order: 0,
+                    fromWorkCalendar: true,
+                    countTowardsWorkHours: true,
+                    fixedDay,
+                  };
+
+                  return newActivity;
+                })
+                .filter((v: TActivity) => v);
+
+              // console.log(importedActivities); // activities
+              resolve(importedActivities);
+            });
+        })
+        .catch((res: any) => {
+          console.log(res.result.error.code);
+          console.log(res.result.error.message);
+        }),
+    );
+
+  const uploadSchedule = async () => {
+    fetchEvents(personalCalendarId).then(async (existingEvents) => {
+      console.log(existingEvents);
+      const newEvents = mySchedule.map((day, dayIndex) => {
+        return day
+          .filter(
+            (item) =>
+              !item.activity.fromWorkCalendar &&
+              existingEvents.every(
+                (event) =>
+                  event.name !== item.activity.name ||
+                  event.fixedTime !== item.time,
+              ),
+          )
+          .map((item, index) => {
+            const startDateTime = moment()
+              .startOf("day")
+              .add(dayIndex, "days")
+              .add(item.time, "minutes")
+              .toISOString();
+            const endDateTime = moment()
+              .startOf("day")
+              .add(dayIndex, "days")
+              .add(item.time + item.activity.duration, "minutes")
+              .toISOString();
+            return {
+              summary: item.activity.name,
+              start: {
+                dateTime: startDateTime,
+                timeZone: "America/Chicago",
+              },
+              end: {
+                dateTime: endDateTime,
+                timeZone: "America/Chicago",
+              },
+              // attendees: [
+              //   {
+              //     email: "ncarter@pathpoint.com",
+              //   },
+              // ],
+            };
+          });
+      });
+      console.log(newEvents);
+
+      let count = 0;
+      for (const day of newEvents) {
+        for (const item of day) {
+          await createEvent(item);
+        }
+      }
     });
+
+    // apiCalendar.listCalendars().then((data: any) => {
+    //   console.log(data);
+    // });
   };
 
   const regenerateSchedule = () => {
@@ -140,8 +234,15 @@ function App() {
         <button onClick={() => apiCalendar.handleSignoutClick()}>
           sign-out
         </button>
-        <button onClick={() => fetchEvents()}>fetch</button>
+        <button
+          onClick={() =>
+            fetchEvents(primaryCalendarId).then(setImportedActivities)
+          }
+        >
+          fetch
+        </button>
         <button onClick={() => regenerateSchedule()}>regenerate</button>
+        <button onClick={() => uploadSchedule()}>upload</button>
       </Box>
 
       <Scrollbars style={{ width: "100%", height: "100%" }}>

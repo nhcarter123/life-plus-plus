@@ -23,8 +23,10 @@ export type TActivity = {
   isWork?: boolean;
   rewardForWorking?: boolean;
   weekdayOnly?: boolean;
+  weekendOnly?: boolean;
   minimumTimeSpentThere?: number;
-  immovable?: boolean;
+  isInPublic?: boolean;
+  fromWorkCalendar?: boolean;
   countTowardsWorkHours?: boolean;
   isWorkFiller?: boolean;
 };
@@ -132,23 +134,23 @@ export const activities: TActivity[] = [
   },
   {
     name: "laundry",
-    order: 6,
+    order: 7,
     frequency: 1 / 7,
-    duration: 20,
+    duration: 15,
     isWork: true,
   },
   {
     name: "dishes",
-    order: 6,
+    order: 9,
     frequency: 1 / 7,
     duration: 15,
     isWork: true,
   },
   {
     name: "dryer",
-    order: 7,
+    order: 8,
     frequency: 1 / 7,
-    duration: 20,
+    duration: 10,
     isWork: true,
   },
   {
@@ -157,6 +159,7 @@ export const activities: TActivity[] = [
     frequency: 1 / 7,
     duration: 120,
     isWork: true,
+    weekendOnly: true,
   },
   {
     name: "drive to cafe",
@@ -165,6 +168,7 @@ export const activities: TActivity[] = [
     duration: 10,
     weekdayOnly: true,
     minimumTimeSpentThere: 120,
+    isInPublic: true,
   },
   {
     name: "dinner",
